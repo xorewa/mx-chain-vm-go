@@ -16,6 +16,7 @@ import (
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-go/executor"
 	executorwrapper "github.com/multiversx/mx-chain-vm-go/executor/wrapper"
+	contextmock "github.com/multiversx/mx-chain-vm-go/mock/context"
 	vmscenario "github.com/multiversx/mx-chain-vm-go/scenario"
 	"github.com/multiversx/mx-chain-vm-go/testcommon/testexecutor"
 	"github.com/stretchr/testify/require"
@@ -39,6 +40,7 @@ type ScenariosTestBuilder struct {
 	t                   *testing.T
 	folder              string
 	singleFile          string
+	singleFilePath      string
 	exclusions          []string
 	pathReplacements    map[string]string
 	executorLogger      executorwrapper.ExecutorLogger
@@ -46,6 +48,8 @@ type ScenariosTestBuilder struct {
 	enableEpochsHandler vmcommon.EnableEpochsHandler
 	currentError        error
 	overrideVMType      []byte
+	withDRWAHook        bool
+	drwaSyncHookCalls   int
 }
 
 // ScenariosTest will create a new ScenariosTestBuilder instance
@@ -54,6 +58,7 @@ func ScenariosTest(t *testing.T) *ScenariosTestBuilder {
 		t:                   t,
 		folder:              "",
 		singleFile:          "",
+		singleFilePath:      "",
 		pathReplacements:    make(map[string]string),
 		executorLogger:      nil,
 		executorFactory:     nil,
@@ -70,6 +75,12 @@ func (mtb *ScenariosTestBuilder) Folder(folder string) *ScenariosTestBuilder {
 // File sets the file
 func (mtb *ScenariosTestBuilder) File(fileName string) *ScenariosTestBuilder {
 	mtb.singleFile = fileName
+	return mtb
+}
+
+// FilePath sets an absolute or caller-resolved scenario file path.
+func (mtb *ScenariosTestBuilder) FilePath(filePath string) *ScenariosTestBuilder {
+	mtb.singleFilePath = filePath
 	return mtb
 }
 
@@ -116,6 +127,12 @@ func (mtb *ScenariosTestBuilder) WithVMType(overrideVMType []byte) *ScenariosTes
 	return mtb
 }
 
+// WithDRWABlockchainHook installs the explicit native hook required by DRWA sync scenarios.
+func (mtb *ScenariosTestBuilder) WithDRWABlockchainHook() *ScenariosTestBuilder {
+	mtb.withDRWAHook = true
+	return mtb
+}
+
 // Run will start the testing process
 func (mtb *ScenariosTestBuilder) Run() *ScenariosTestBuilder {
 	if check.IfNil(mtb.executorFactory) {
@@ -137,6 +154,9 @@ func (mtb *ScenariosTestBuilder) Run() *ScenariosTestBuilder {
 	defer scenarioExecutor.Close()
 
 	scenarioExecutor.World.EnableEpochsHandler = mtb.enableEpochsHandler
+	if mtb.withDRWAHook {
+		mtb.installDRWABlockchainHook(scenarioExecutor, vmBuilder.GetVMType())
+	}
 
 	fileResolver := scenio.NewDefaultFileResolver()
 	for pathInTest, actualPath := range mtb.pathReplacements {
@@ -149,7 +169,11 @@ func (mtb *ScenariosTestBuilder) Run() *ScenariosTestBuilder {
 		vmBuilder.GetVMType(),
 	)
 
-	if len(mtb.singleFile) > 0 {
+	if len(mtb.singleFilePath) > 0 {
+		mtb.currentError = runner.RunSingleJSONScenario(
+			mtb.singleFilePath,
+			scenio.DefaultRunScenarioOptions())
+	} else if len(mtb.singleFile) > 0 {
 		fullPath := path.Join(getTestRoot(), mtb.folder)
 		fullPath = path.Join(fullPath, mtb.singleFile)
 
@@ -168,6 +192,42 @@ func (mtb *ScenariosTestBuilder) Run() *ScenariosTestBuilder {
 	return mtb
 }
 
+func (mtb *ScenariosTestBuilder) installDRWABlockchainHook(executor *scenexec.ScenarioExecutor, vmType []byte) {
+	executor.World.ProvidedBlockchainHook = &contextmock.BlockchainHookStub{
+		ApplyDRWASyncEnvelopeBytesCalled: func(_ []byte, _ []byte) error {
+			mtb.drwaSyncHookCalls++
+			return nil
+		},
+	}
+
+	executor.World.AuthorizedDRWASyncCallers = make(map[string]struct{})
+	for _, caller := range []string{
+		"drwa_policy_registry",
+		"drwa_asset_manager",
+		"drwa_attestation",
+		"drwa_identity_registry",
+		"drwa_auth_admin",
+	} {
+		executor.World.AuthorizedDRWASyncCallers[string(makeDRWAScenarioSCAddress(caller, vmType))] = struct{}{}
+	}
+}
+
+func makeDRWAScenarioSCAddress(prefix string, vmType []byte) []byte {
+	const (
+		scAddressNumLeadingZeros     = 8
+		scAddressReservedPrefixBytes = 10
+		addressLen                   = 32
+	)
+
+	address := make([]byte, addressLen)
+	copy(address[scAddressReservedPrefixBytes:], []byte(prefix))
+	for i := scAddressReservedPrefixBytes + len(prefix); i < addressLen; i++ {
+		address[i] = '_'
+	}
+	copy(address[scAddressNumLeadingZeros:scAddressReservedPrefixBytes], vmType)
+	return address
+}
+
 // CheckNoError does an assert for the containing error
 func (mtb *ScenariosTestBuilder) CheckNoError() *ScenariosTestBuilder {
 	if mtb.currentError != nil {
@@ -179,6 +239,18 @@ func (mtb *ScenariosTestBuilder) CheckNoError() *ScenariosTestBuilder {
 // RequireError does an assert for the containing error
 func (mtb *ScenariosTestBuilder) RequireError(expectedErrorMsg string) *ScenariosTestBuilder {
 	require.EqualError(mtb.t, mtb.currentError, expectedErrorMsg)
+	return mtb
+}
+
+// RequireErrorContains asserts that the current scenario error contains the expected text.
+func (mtb *ScenariosTestBuilder) RequireErrorContains(expectedErrorMsg string) *ScenariosTestBuilder {
+	require.ErrorContains(mtb.t, mtb.currentError, expectedErrorMsg)
+	return mtb
+}
+
+// CheckDRWASyncHookCallsAtLeast checks that DRWA scenario execution reached the native sync hook.
+func (mtb *ScenariosTestBuilder) CheckDRWASyncHookCallsAtLeast(minCalls int) *ScenariosTestBuilder {
+	require.GreaterOrEqual(mtb.t, mtb.drwaSyncHookCalls, minCalls)
 	return mtb
 }
 

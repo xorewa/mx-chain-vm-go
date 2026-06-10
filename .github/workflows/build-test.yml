@@ -2,12 +2,38 @@ name: Build and run tests
 
 on:
   push:
-    branches: [ master, rc/*, feat/* ]
+    branches: [ master, NewArc, rc/*, feat/* ]
   pull_request:
-    branches: [ master, feat/*, rc/* ]
+    branches: [ master, NewArc, feat/*, rc/* ]
   workflow_dispatch:
 
 jobs:
+  ffi-guardrails:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.23.6
+    - name: Checkout mx-chain-vm-go
+      uses: actions/checkout@v4
+      with:
+        path: mx-chain-vm-go
+    - name: Checkout mx-vm-executor-rs
+      uses: actions/checkout@v4
+      with:
+        repository: xorewa/mx-vm-executor-rs
+        ref: NewArc
+        path: mx-vm-executor-rs
+
+    - name: Check Rust/Go VM executor ABI and hook drift
+      working-directory: mx-chain-vm-go
+      env:
+        MX_VM_EXECUTOR_RS_PATH: ${{ github.workspace }}/mx-vm-executor-rs
+      run: |
+        go test ./wasmer2 -run 'TestLibVMExecCAPIHeader_OptionalRustRepoCopyIsInSync|TestLibVMExecCAPIHeader_DefineMatchesExpectedVersion|TestCheckAPIVersionValue_ErrorsOnMismatch' -count=1
+        go test ./vmhost/vmhooks/generate -run 'TestRustHookListsOptionalRepoCopyIsInSync|TestGeneratedHookListsMatchCheckedInGoBridge' -count=1
+
   test:
     strategy:
       matrix:
@@ -31,4 +57,3 @@ jobs:
       if: runner.os == 'macOS'
       run: | 
         make test-w2
-

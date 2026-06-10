@@ -18,10 +18,10 @@ var _ executor.Executor = (*Wasmer2Executor)(nil)
 // signature/layout drift from a stale lib paired with newer Go code.
 //
 // Bumping this:
-//   1. Bump VM_EXEC_API_VERSION in mx-vm-executor-rs/c-api/src/lib.rs
-//   2. Rebuild the .so + .dylib bundle (see mx-vm-executor-rs Makefile)
-//   3. Replace the .so/.dylib + libvmexeccapi.h in this directory
-//   4. Bump this constant
+//  1. Bump VM_EXEC_API_VERSION in mx-vm-executor-rs/c-api/src/lib.rs
+//  2. Rebuild the .so + .dylib bundle (see mx-vm-executor-rs Makefile)
+//  3. Replace the .so/.dylib + libvmexeccapi.h in this directory
+//  4. Bump this constant
 const expectedAPIVersion uint32 = 1
 
 // apiVersionCheckOnce guards the version handshake so it only fires
@@ -36,15 +36,20 @@ var apiVersionCheckErr error
 // checkAPIVersion runs the once-per-process FFI ABI handshake. ISSUE-020.
 func checkAPIVersion() error {
 	apiVersionCheckOnce.Do(func() {
-		actual := cWasmerAPIVersion()
-		if actual != expectedAPIVersion {
-			apiVersionCheckErr = fmt.Errorf(
-				"libvmexeccapi ABI version mismatch: Go bridge built against v%d, "+
-					"linked .so/.dylib reports v%d — refresh either the bridge or the lib",
-				expectedAPIVersion, actual)
-		}
+		apiVersionCheckErr = checkAPIVersionValue(cWasmerAPIVersion())
 	})
 	return apiVersionCheckErr
+}
+
+func checkAPIVersionValue(actual uint32) error {
+	if actual == expectedAPIVersion {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"libvmexeccapi ABI version mismatch: Go bridge built against v%d, "+
+			"linked .so/.dylib reports v%d — refresh either the bridge or the lib",
+		expectedAPIVersion, actual)
 }
 
 // Wasmer2Executor oversees the creation of Wasmer instances and execution.
@@ -241,12 +246,13 @@ func (wasmerExecutor *Wasmer2Executor) IsInterfaceNil() bool {
 // InitVMHooks inits the VM hooks.
 //
 // ISSUE-011: post-fix, this method:
-//   1. Stores `vmHooks` on the executor (unchanged — kept alive by
-//      the executor reference for legacy compatibility).
-//   2. Registers `vmHooks` in the global registry, getting back a
-//      stable uint64 handle.
-//   3. Writes the HANDLE (not the address) into a C-allocated slot
-//      and publishes that slot to wasmer via the cgo set-data call.
+//  1. Stores `vmHooks` on the executor (unchanged — kept alive by
+//     the executor reference for legacy compatibility).
+//  2. Registers `vmHooks` in the global registry, getting back a
+//     stable uint64 handle.
+//  3. Writes the HANDLE (not the address) into a C-allocated slot
+//     and publishes that slot to wasmer via the cgo set-data call.
+//
 // The legacy `vmHooksPtr`/`vmHooksPtrStorage` machinery is kept
 // populated in parallel for diagnostic / rollback observability, but
 // wasmer no longer reads from it — `getVMHooksFromContextRawPtr` reads

@@ -7,3 +7,7 @@
 [![codecov](https://codecov.io/gh/multiversx/mx-chain-vm-go/branch/master/graph/badge.svg?token=MYS5EDASOJ)](https://codecov.io/gh/multiversx/mx-chain-vm-go)
 
 WASM-based Virtual Machine for running MultiversX Smart Contracts.
+
+## NewArc Operations Notes
+
+- [Compiled cache envelope migration](docs/compiled-cache-envelope-migration.md)
