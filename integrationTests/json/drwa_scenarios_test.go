@@ -1,7 +1,6 @@
 package vmjsonintegrationtest
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -14,13 +13,8 @@ func TestDRWAScenarioSyncHookCoverage(t *testing.T) {
 	for _, tc := range drwaScenarioSyncHookCoverageCases() {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			scenarioPath := tc.path
-			if tc.writeScenario != nil {
-				scenarioPath = tc.writeScenario(t)
-			}
-
 			builder := ScenariosTest(t).
-				FilePath(scenarioPath).
+				FilePath(tc.path).
 				WithDRWABlockchainHook()
 			withDRWAContractPathReplacements(builder)
 			builder.Run().
@@ -43,14 +37,13 @@ func TestDRWAScenarioSyncHookCoverageRequiresOptInHook(t *testing.T) {
 }
 
 type drwaScenarioSyncHookCoverageCase struct {
-	name          string
-	path          string
-	writeScenario func(t *testing.T) string
-	minSyncCalls  int
+	name         string
+	path         string
+	minSyncCalls int
 }
 
 func drwaScenarioSyncHookCoverageCases() []drwaScenarioSyncHookCoverageCase {
-	scenariosRoot := filepath.Join(getOcelotRoot(), "mx-sdk-rs", "contracts", "drwa")
+	scenariosRoot := filepath.Join(getTestRoot(), "contracts", "drwa")
 	pathFor := func(parts ...string) string {
 		return filepath.Join(append([]string{scenariosRoot}, parts...)...)
 	}
@@ -62,9 +55,19 @@ func drwaScenarioSyncHookCoverageCases() []drwaScenarioSyncHookCoverageCase {
 			minSyncCalls: 2,
 		},
 		{
+			name:         "policy-registry-denial-signals",
+			path:         pathFor("policy-registry", "scenarios", "policy-registry-denial-signals.scen.json"),
+			minSyncCalls: 1,
+		},
+		{
 			name:         "asset-manager",
 			path:         pathFor("asset-manager", "scenarios", "asset-manager-init.scen.json"),
 			minSyncCalls: 3,
+		},
+		{
+			name:         "asset-manager-denial-signals",
+			path:         pathFor("asset-manager", "scenarios", "asset-manager-denial-signals.scen.json"),
+			minSyncCalls: 1,
 		},
 		{
 			name:         "attestation",
@@ -72,178 +75,26 @@ func drwaScenarioSyncHookCoverageCases() []drwaScenarioSyncHookCoverageCase {
 			minSyncCalls: 1,
 		},
 		{
-			name:          "drwa-auth-admin",
-			writeScenario: writeDRWAAuthAdminCurrentScenario,
-			minSyncCalls:  1,
+			name:         "attestation-denial-signals",
+			path:         pathFor("attestation", "scenarios", "attestation-denial-signals.scen.json"),
+			minSyncCalls: 1,
+		},
+		{
+			name:         "drwa-auth-admin",
+			path:         pathFor("drwa-auth-admin", "scenarios", "drwa-auth-admin-current.scen.json"),
+			minSyncCalls: 1,
 		},
 		{
 			name:         "identity-registry",
 			path:         pathFor("identity-registry", "scenarios", "identity-registry-init.scen.json"),
 			minSyncCalls: 2,
 		},
+		{
+			name:         "identity-registry-denial-signals",
+			path:         pathFor("identity-registry", "scenarios", "identity-registry-denial-signals.scen.json"),
+			minSyncCalls: 1,
+		},
 	}
-}
-
-func getOcelotRoot() string {
-	return filepath.Clean(filepath.Join(getTestRoot(), "..", ".."))
-}
-
-func writeDRWAAuthAdminCurrentScenario(t *testing.T) string {
-	t.Helper()
-
-	dir := t.TempDir()
-	scenarioPath := filepath.Join(dir, "drwa-auth-admin-current.scen.json")
-	scenario := `{
-  "name": "drwa auth admin current 3-of-5 caller rotation",
-  "steps": [
-    {
-      "step": "setState",
-      "accounts": {
-        "address:owner": { "nonce": "0", "balance": "1,000,000" },
-        "address:signer1": { "nonce": "0", "balance": "1,000,000" },
-        "address:signer2": { "nonce": "0", "balance": "1,000,000" },
-        "address:signer3": { "nonce": "0", "balance": "1,000,000" },
-        "address:signer4": { "nonce": "0", "balance": "1,000,000" },
-        "address:signer5": { "nonce": "0", "balance": "1,000,000" }
-      },
-      "newAddresses": [
-        {
-          "creatorAddress": "address:owner",
-          "creatorNonce": "0",
-          "newAddress": "sc:drwa_auth_admin"
-        }
-      ],
-      "currentBlockInfo": {
-        "blockRound": "1"
-      }
-    },
-    {
-      "step": "scDeploy",
-      "id": "deploy",
-      "tx": {
-        "from": "address:owner",
-        "contractCode": "mxsc:../output/drwa-auth-admin.mxsc.json",
-        "arguments": [
-          "3",
-          "20000",
-          "address:signer1",
-          "address:signer2",
-          "address:signer3",
-          "address:signer4",
-          "address:signer5"
-        ],
-        "gasLimit": "80,000,000",
-        "gasPrice": "0"
-      },
-      "expect": {
-        "status": "0",
-        "out": [],
-        "gas": "*",
-        "refund": "*"
-      }
-    },
-    {
-      "step": "scCall",
-      "id": "propose-update",
-      "tx": {
-        "from": "address:signer1",
-        "to": "sc:drwa_auth_admin",
-        "function": "proposeUpdateCallerAddress",
-        "arguments": [
-          "str:auth_admin",
-          "str:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        ],
-        "gasLimit": "80,000,000",
-        "gasPrice": "0"
-      },
-      "expect": {
-        "status": "0",
-        "out": ["1"],
-        "gas": "*",
-        "refund": "*"
-      }
-    },
-    {
-      "step": "scCall",
-      "id": "sign-update-2",
-      "tx": {
-        "from": "address:signer2",
-        "to": "sc:drwa_auth_admin",
-        "function": "sign",
-        "arguments": ["1"],
-        "gasLimit": "50,000,000",
-        "gasPrice": "0"
-      },
-      "expect": {
-        "status": "0",
-        "out": [],
-        "gas": "*",
-        "refund": "*"
-      }
-    },
-    {
-      "step": "scCall",
-      "id": "sign-update-3",
-      "tx": {
-        "from": "address:signer3",
-        "to": "sc:drwa_auth_admin",
-        "function": "sign",
-        "arguments": ["1"],
-        "gasLimit": "50,000,000",
-        "gasPrice": "0"
-      },
-      "expect": {
-        "status": "0",
-        "out": [],
-        "gas": "*",
-        "refund": "*"
-      }
-    },
-    {
-      "step": "setState",
-      "currentBlockInfo": {
-        "blockRound": "15000"
-      }
-    },
-    {
-      "step": "scCall",
-      "id": "perform-update",
-      "tx": {
-        "from": "address:signer1",
-        "to": "sc:drwa_auth_admin",
-        "function": "performAction",
-        "arguments": ["1"],
-        "gasLimit": "100,000,000",
-        "gasPrice": "0"
-      },
-      "expect": {
-        "status": "0",
-        "out": "*",
-        "gas": "*",
-        "refund": "*"
-      }
-    },
-    {
-      "step": "scQuery",
-      "id": "verify-version",
-      "tx": {
-        "to": "sc:drwa_auth_admin",
-        "function": "getAuthorizedCallerVersion",
-        "arguments": ["str:auth_admin"]
-      },
-      "expect": {
-        "status": "0",
-        "out": ["1"]
-      }
-    }
-  ]
-}
-`
-
-	if err := os.WriteFile(scenarioPath, []byte(scenario), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	return scenarioPath
 }
 
 func withDRWAContractPathReplacements(builder *ScenariosTestBuilder) {
