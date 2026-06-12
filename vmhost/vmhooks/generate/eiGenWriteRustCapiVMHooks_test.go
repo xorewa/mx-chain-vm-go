@@ -138,6 +138,7 @@ func readCanonicalEIMetadata(t *testing.T) *EIMetadata {
 			{SourcePath: "manMapOps.go", Name: "ManagedMap"},
 			{SourcePath: "smallIntOps.go", Name: "SmallInt"},
 			{SourcePath: "cryptoei.go", Name: "Crypto"},
+			{SourcePath: "unsafeOps.go", Name: "Unsafe"},
 		},
 	}
 
@@ -246,12 +247,7 @@ func parkedNativeHookPointerFields() []string {
 	// These Rust-only native hook placeholders are tracked under parked ZK/native
 	// hook work. Keep the allowlist explicit so any new drift fails review.
 	return []string{
-		"activate_unsafe_mode_func_ptr",
-		"deactivate_unsafe_mode_func_ptr",
 		"managed_add_ec_func_ptr",
-		"managed_get_error_with_index_func_ptr",
-		"managed_get_last_error_func_ptr",
-		"managed_get_num_errors_func_ptr",
 		"managed_map_to_curve_ec_func_ptr",
 		"managed_mul_ec_func_ptr",
 		"managed_multi_exp_ec_func_ptr",
@@ -264,12 +260,7 @@ func parkedNativeHookPointerFields() []string {
 func parkedNativeHookImportNames() []string {
 	// Must stay in sync with parkedNativeHookPointerFields.
 	return []string{
-		"activateUnsafeMode",
-		"deactivateUnsafeMode",
 		"managedAddEC",
-		"managedGetErrorWithIndex",
-		"managedGetLastError",
-		"managedGetNumErrors",
 		"managedMapToCurveEC",
 		"managedMulEC",
 		"managedMultiExpEC",
