@@ -3,11 +3,11 @@
         "contractCrate": {
             "name": "mrv-reserve-proof-registry",
             "version": "0.0.0",
-            "gitVersion": "v0.65.1-8-g36d418071"
+            "gitVersion": "v0.99.9-99-g7b73155fe1"
         },
         "framework": {
             "name": "multiversx-sc",
-            "version": "0.65.1"
+            "version": "0.66.2"
         }
     },
     "docs": [
