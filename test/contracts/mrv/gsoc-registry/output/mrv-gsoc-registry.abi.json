@@ -3,7 +3,7 @@
         "contractCrate": {
             "name": "mrv-gsoc-registry",
             "version": "0.0.0",
-            "gitVersion": "v0.99.9-99-g7b73155fe1"
+            "gitVersion": "v0.99.9-100-g5eeb42ecf3"
         },
         "framework": {
             "name": "multiversx-sc",
