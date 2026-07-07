@@ -1,0 +1,56 @@
+{
+    "name": "drwa common test harness native governance query",
+    "steps": [
+        {
+            "step": "setState",
+            "accounts": {
+                "address:owner": {
+                    "nonce": "0",
+                    "balance": "1,000,000"
+                }
+            },
+            "newAddresses": [
+                {
+                    "creatorAddress": "address:owner",
+                    "creatorNonce": "0",
+                    "newAddress": "sc:drwa_common_harness"
+                }
+            ]
+        },
+        {
+            "step": "scDeploy",
+            "id": "deploy",
+            "tx": {
+                "from": "address:owner",
+                "contractCode": "file:../output/drwa-common-test-harness.wasm",
+                "arguments": [],
+                "gasLimit": "50,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "0",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scQuery",
+            "id": "query-native-governance-config",
+            "tx": {
+                "to": "sc:drwa_common_harness",
+                "function": "testNativeGovernanceQuery",
+                "arguments": [
+                    "0",
+                    "str:DRWA_CONFIG"
+                ]
+            },
+            "expect": {
+                "out": [
+                    "str:native-governance-ok"
+                ],
+                "status": "0"
+            }
+        }
+    ]
+}

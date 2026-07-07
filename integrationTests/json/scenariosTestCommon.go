@@ -37,19 +37,20 @@ func getTestRoot() string {
 
 // ScenariosTestBuilder defines the Scenarios builder component
 type ScenariosTestBuilder struct {
-	t                   *testing.T
-	folder              string
-	singleFile          string
-	singleFilePath      string
-	exclusions          []string
-	pathReplacements    map[string]string
-	executorLogger      executorwrapper.ExecutorLogger
-	executorFactory     executor.ExecutorAbstractFactory
-	enableEpochsHandler vmcommon.EnableEpochsHandler
-	currentError        error
-	overrideVMType      []byte
-	withDRWAHook        bool
-	drwaSyncHookCalls   int
+	t                        *testing.T
+	folder                   string
+	singleFile               string
+	singleFilePath           string
+	exclusions               []string
+	pathReplacements         map[string]string
+	executorLogger           executorwrapper.ExecutorLogger
+	executorFactory          executor.ExecutorAbstractFactory
+	enableEpochsHandler      vmcommon.EnableEpochsHandler
+	currentError             error
+	overrideVMType           []byte
+	withDRWAHook             bool
+	drwaSyncHookCalls        int
+	drwaGovernanceQueryCalls int
 }
 
 // ScenariosTest will create a new ScenariosTestBuilder instance
@@ -198,6 +199,10 @@ func (mtb *ScenariosTestBuilder) installDRWABlockchainHook(executor *scenexec.Sc
 			mtb.drwaSyncHookCalls++
 			return nil
 		},
+		QueryDRWANativeGovernanceCalled: func(_ uint32, _ []byte) ([]byte, error) {
+			mtb.drwaGovernanceQueryCalls++
+			return []byte("native-governance-ok"), nil
+		},
 	}
 
 	executor.World.AuthorizedDRWASyncCallers = make(map[string]struct{})
@@ -251,6 +256,13 @@ func (mtb *ScenariosTestBuilder) RequireErrorContains(expectedErrorMsg string) *
 // CheckDRWASyncHookCallsAtLeast checks that DRWA scenario execution reached the native sync hook.
 func (mtb *ScenariosTestBuilder) CheckDRWASyncHookCallsAtLeast(minCalls int) *ScenariosTestBuilder {
 	require.GreaterOrEqual(mtb.t, mtb.drwaSyncHookCalls, minCalls)
+	return mtb
+}
+
+// CheckDRWAGovernanceQueryHookCallsAtLeast checks that DRWA scenario execution
+// reached the native governance query hook.
+func (mtb *ScenariosTestBuilder) CheckDRWAGovernanceQueryHookCallsAtLeast(minCalls int) *ScenariosTestBuilder {
+	require.GreaterOrEqual(mtb.t, mtb.drwaGovernanceQueryCalls, minCalls)
 	return mtb
 }
 

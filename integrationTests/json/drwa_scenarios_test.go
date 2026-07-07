@@ -36,6 +36,24 @@ func TestDRWAScenarioSyncHookCoverageRequiresOptInHook(t *testing.T) {
 		RequireErrorContains("opcode is not allowed")
 }
 
+func TestDRWAScenarioNativeGovernanceQueryHookCoverage(t *testing.T) {
+	if testing.Short() {
+		t.Skip("not a short test")
+	}
+
+	scenarioPath := filepath.Join(
+		getTestRoot(),
+		"contracts", "drwa", "common-test-harness", "scenarios", "native-governance-query.scen.json",
+	)
+
+	ScenariosTest(t).
+		FilePath(scenarioPath).
+		WithDRWABlockchainHook().
+		Run().
+		CheckNoError().
+		CheckDRWAGovernanceQueryHookCallsAtLeast(1)
+}
+
 type drwaScenarioSyncHookCoverageCase struct {
 	name         string
 	path         string
