@@ -50,25 +50,27 @@ must be copied to:
 mx-chain-vm-go/wasmer2/libvmexeccapi.h
 ```
 
-## ABI Version Discipline
+## C ABI Discipline
 
-The Go bridge checks the Rust dynamic library ABI at startup through
-`vm_exec_api_version()`. When any C ABI or semantic FFI contract changes:
+The Go bridge must remain byte-layout compatible with
+`mx-vm-executor-rs/c-api/libvmexeccapi.h`. The clean upstream C API does not
+export a runtime ABI-version function, so ABI safety is enforced by keeping the
+generated Go bridge, the checked-in header, and the rebuilt dynamic library in
+lockstep. When any C ABI or semantic FFI contract changes:
 
-1. Bump `VM_EXEC_API_VERSION` in `mx-vm-executor-rs/c-api/src/lib.rs`.
-2. Rebuild the Rust dynamic library and `c-api/libvmexeccapi.h`.
-3. Copy the refreshed `libvmexeccapi.h` into `mx-chain-vm-go/wasmer2`.
-4. Bump `expectedAPIVersion` in `mx-chain-vm-go/wasmer2/wasmer2Executor.go`.
-5. Run focused Wasmer2 tests.
+1. Rebuild the Rust dynamic library and `c-api/libvmexeccapi.h`.
+2. Copy the refreshed `libvmexeccapi.h` into `mx-chain-vm-go/wasmer2`.
+3. Refresh the platform dynamic libraries in `mx-chain-vm-go/wasmer2`.
+4. Run focused Wasmer2 and hook-generation tests.
 
 ## CI Guardrails
 
-`wasmer2/abiVersion_test.go` verifies that:
+The Wasmer2 and hook-generation tests verify that:
 
-- the linked Rust library reports the ABI version expected by the Go bridge,
-- the local `wasmer2/libvmexeccapi.h` declares the same ABI version,
-- if `MX_VM_EXECUTOR_RS_PATH` is set, the Go-side header is byte-for-byte
-  identical to `mx-vm-executor-rs/c-api/libvmexeccapi.h`.
+- the Go-side hook pointer struct still matches the Rust C header layout used by
+  the checked-in bridge code,
+- DRWA and official hook imports are registered in both Go and Rust surfaces,
+- scenario execution reaches the DRWA native hook paths.
 
 For cross-repo CI, checkout `mx-vm-executor-rs` beside this repository and run
 the Wasmer2 tests with `MX_VM_EXECUTOR_RS_PATH` pointing to that checkout.

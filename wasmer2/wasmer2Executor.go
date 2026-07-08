@@ -1,7 +1,6 @@
 package wasmer2
 
 import (
-	"fmt"
 	"sync"
 	"unsafe"
 
@@ -10,47 +9,6 @@ import (
 )
 
 var _ executor.Executor = (*Wasmer2Executor)(nil)
-
-// expectedAPIVersion is the libvmexeccapi ABI version this Go bridge
-// was built against. ISSUE-020: must match the value compiled into the
-// linked .so/.dylib (via VM_EXEC_API_VERSION in lib.rs). On mismatch,
-// CreateExecutor returns an error instead of risking silent FFI
-// signature/layout drift from a stale lib paired with newer Go code.
-//
-// Bumping this:
-//  1. Bump VM_EXEC_API_VERSION in mx-vm-executor-rs/c-api/src/lib.rs
-//  2. Rebuild the .so + .dylib bundle (see mx-vm-executor-rs Makefile)
-//  3. Replace the .so/.dylib + libvmexeccapi.h in this directory
-//  4. Bump this constant
-const expectedAPIVersion uint32 = 1
-
-// apiVersionCheckOnce guards the version handshake so it only fires
-// once per process even if multiple wasmer2 executors are constructed.
-var apiVersionCheckOnce sync.Once
-
-// apiVersionCheckErr captures the result of the one-time handshake so
-// every subsequent CreateExecutor call returns the same error
-// deterministically (rather than only the first caller seeing it).
-var apiVersionCheckErr error
-
-// checkAPIVersion runs the once-per-process FFI ABI handshake. ISSUE-020.
-func checkAPIVersion() error {
-	apiVersionCheckOnce.Do(func() {
-		apiVersionCheckErr = checkAPIVersionValue(cWasmerAPIVersion())
-	})
-	return apiVersionCheckErr
-}
-
-func checkAPIVersionValue(actual uint32) error {
-	if actual == expectedAPIVersion {
-		return nil
-	}
-
-	return fmt.Errorf(
-		"libvmexeccapi ABI version mismatch: Go bridge built against v%d, "+
-			"linked .so/.dylib reports v%d — refresh either the bridge or the lib",
-		expectedAPIVersion, actual)
-}
 
 // Wasmer2Executor oversees the creation of Wasmer instances and execution.
 type Wasmer2Executor struct {
@@ -82,14 +40,6 @@ type Wasmer2Executor struct {
 
 // CreateExecutor creates a new wasmer executor.
 func CreateExecutor() (*Wasmer2Executor, error) {
-	// ISSUE-020: ABI version handshake against the linked libvmexeccapi.
-	// Once-per-process; returns the same error on every subsequent call
-	// if the lib is stale. Fail-loud beats a silent layout/signature
-	// drift between the Go bridge and a forgotten older .so/.dylib.
-	if err := checkAPIVersion(); err != nil {
-		return nil, err
-	}
-
 	vmHookPointers := allocateVMHookPointers()
 	vmHookPointersStorage := cMalloc(unsafe.Sizeof(uintptr(0)))
 	*(*uintptr)(vmHookPointersStorage) = uintptr(unsafe.Pointer(vmHookPointers))

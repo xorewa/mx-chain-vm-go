@@ -133,14 +133,7 @@ func (instance *Wasmer2Instance) Cache() ([]byte, error) {
 	}
 
 	goBytes := C.GoBytes(unsafe.Pointer(cacheBytes), C.int(cacheLen))
-
-	// ISSUE-009: reclaim through the SAME allocator that produced this
-	// buffer (Rust's GlobalAlloc), via the dedicated `vm_exec_cache_free`
-	// export. The previous `C.free(unsafe.Pointer(cacheBytes))` only
-	// worked because Rust's default GlobalAlloc happens to match libc
-	// malloc; any future #[global_allocator] switch on the Rust side
-	// makes that pairing UB. See bridge2.go::cWasmerCacheFree doc-comment.
-	cWasmerCacheFree(cacheBytes, cacheLen)
+	cFree(unsafe.Pointer(cacheBytes))
 	cacheBytes = nil
 	return goBytes, nil
 }

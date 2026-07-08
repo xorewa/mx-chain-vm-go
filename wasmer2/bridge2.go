@@ -96,34 +96,6 @@ func cWasmerInstanceCache(
 	))
 }
 
-// cWasmerCacheFree releases a cache buffer that was previously produced
-// by cWasmerInstanceCache (i.e. handed out by `vm_exec_instance_cache`'s
-// `mem::forget` path on the Rust side).
-//
-// ISSUE-009. Historically the Go side called `C.free(unsafe.Pointer(buf))`
-// here, which only worked because Rust's default GlobalAlloc happens to
-// be the same system malloc that libc::free understands. Any future
-// `#[global_allocator]` switch on the Rust side (jemallocator, mimalloc,
-// custom) makes that pairing undefined behaviour because chunk metadata
-// is allocator-specific. `vm_exec_cache_free` reclaims the Vec through
-// the SAME allocator that produced it, regardless of which global
-// allocator is configured.
-func cWasmerCacheFree(ptr *cUchar, length cUint32T) {
-	C.vm_exec_cache_free(
-		(*C.uint8_t)(unsafe.Pointer(ptr)),
-		(C.uint32_t)(length),
-	)
-}
-
-// cWasmerAPIVersion returns the ABI version that the linked
-// libvmexeccapi.{so,dylib} reports. ISSUE-020: callers compare this
-// against an expected constant and refuse to start on mismatch, so a
-// stale .so/.dylib paired with a newer Go bridge fails loud at process
-// init instead of silently corrupting via signature/layout drift.
-func cWasmerAPIVersion() uint32 {
-	return uint32(C.vm_exec_api_version())
-}
-
 func cWasmerInstanceFromCache(
 	executor *cWasmerExecutorT,
 	instance **cWasmerInstanceT,
