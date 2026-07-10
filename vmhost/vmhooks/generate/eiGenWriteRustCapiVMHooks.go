@@ -12,7 +12,6 @@ use std::ffi::c_void;
 
 use multiversx_chain_vm_executor::{MemLength, MemPtr};
 
-use crate::capi_mem_conversion::{mem_length_to_i32, mem_ptr_to_i32};
 use crate::capi_vm_hook_pointers::vm_exec_vm_hook_c_func_pointers;
 
 #[derive(Debug)]
@@ -30,11 +29,11 @@ impl CapiVMHooks {
     }
 
     fn convert_mem_ptr(&self, mem_ptr: MemPtr) -> i32 {
-        mem_ptr_to_i32(mem_ptr)
+        mem_ptr as i32
     }
 
     fn convert_mem_length(&self, mem_length: MemLength) -> i32 {
-        mem_length_to_i32(mem_length)
+        mem_length as i32
     }
 }
 

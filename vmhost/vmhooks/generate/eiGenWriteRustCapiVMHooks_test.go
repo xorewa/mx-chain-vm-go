@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestWriteRustCapiVMHooksEmitsCheckedMemoryBridgeConversions(t *testing.T) {
+func TestWriteRustCapiVMHooksEmitsUpstreamMemoryBridgeConversions(t *testing.T) {
 	t.Parallel()
 
 	outputDir := t.TempDir()
@@ -26,23 +26,23 @@ func TestWriteRustCapiVMHooksEmitsCheckedMemoryBridgeConversions(t *testing.T) {
 
 	generatedCode := string(generated)
 	requiredSnippets := []string{
-		"use crate::capi_mem_conversion::{mem_length_to_i32, mem_ptr_to_i32};",
-		"mem_ptr_to_i32(mem_ptr)",
-		"mem_length_to_i32(mem_length)",
+		"mem_ptr as i32",
+		"mem_length as i32",
 	}
 	for _, snippet := range requiredSnippets {
 		if !strings.Contains(generatedCode, snippet) {
-			t.Fatalf("generated C-API VM hooks missing checked conversion snippet %q", snippet)
+			t.Fatalf("generated C-API VM hooks missing upstream memory bridge conversion %q", snippet)
 		}
 	}
 
 	forbiddenSnippets := []string{
-		"mem_ptr as i32",
-		"mem_length as i32",
+		"capi_mem_conversion",
+		"mem_ptr_to_i32(mem_ptr)",
+		"mem_length_to_i32(mem_length)",
 	}
 	for _, snippet := range forbiddenSnippets {
 		if strings.Contains(generatedCode, snippet) {
-			t.Fatalf("generated C-API VM hooks still contain truncating conversion %q", snippet)
+			t.Fatalf("generated C-API VM hooks contain non-upstream memory bridge conversion %q", snippet)
 		}
 	}
 }

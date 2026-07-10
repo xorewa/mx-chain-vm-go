@@ -70,7 +70,15 @@ The Wasmer2 and hook-generation tests verify that:
 - the Go-side hook pointer struct still matches the Rust C header layout used by
   the checked-in bridge code,
 - DRWA and official hook imports are registered in both Go and Rust surfaces,
+- generated Rust C-API memory bridge conversions stay aligned with upstream
+  MultiversX behavior (`MemPtr` / `MemLength` round-trip through `as i32`),
 - scenario execution reaches the DRWA native hook paths.
+
+The managed ZK/native EC hook names are intentionally parked placeholders for
+the current NewArc retrofit. They must not be treated as production-supported
+native ZK verification until a separate design and implementation issue wires
+Go VM host support, gas semantics, cryptographic implementation, and scenario
+tests.
 
 For cross-repo CI, checkout `mx-vm-executor-rs` beside this repository and run
 the Wasmer2 tests with `MX_VM_EXECUTOR_RS_PATH` pointing to that checkout.
