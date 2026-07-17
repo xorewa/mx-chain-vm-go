@@ -50,7 +50,7 @@ replace github.com/multiversx/mx-chain-storage-go => github.com/xorewa/mx-chain-
 
 replace github.com/multiversx/mx-chain-vm-common-go => github.com/xorewa/mx-chain-vm-common-go v0.0.0-20260717055012-49796c0ad51d
 
-replace github.com/multiversx/mx-chain-scenario-go => github.com/xorewa/mx-chain-scenario-go v0.0.0-20260707084605-73f361b1922c
+replace github.com/multiversx/mx-chain-scenario-go => github.com/xorewa/mx-chain-scenario-go v0.0.0-20260717062834-2ba66d6af7ce
 
 replace github.com/multiversx/mx-components-big-int => github.com/xorewa/mx-components-big-int v0.0.0-20260507133911-536f4799b94f
 
