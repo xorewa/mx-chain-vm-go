@@ -2,10 +2,9 @@ name: Build and run tests
 
 on:
   push:
-    branches: [ master, NewArc, rc/*, feat/* ]
+    branches: [ NewArc ]
   pull_request:
-    branches: [ master, NewArc, feat/*, rc/* ]
-  workflow_dispatch:
+    branches: [ NewArc ]
 
 jobs:
   ffi-guardrails:
