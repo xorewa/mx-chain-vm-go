@@ -1,0 +1,11 @@
+# The VM exposes generic, managed elliptic-curve operations as part of its
+# protocol ABI. Go 1.26 deprecates the generic crypto/elliptic API, but a
+# replacement requires a separately reviewed ABI and consensus migration.
+# Keep staticcheck enabled everywhere else; suppress only this compatibility
+# diagnostic for the host implementation that owns those ABI operations.
+issues:
+  exclude-rules:
+    - path: vmhost/vmhooks/cryptoei\.go
+      linters:
+        - staticcheck
+      text: "SA1019"

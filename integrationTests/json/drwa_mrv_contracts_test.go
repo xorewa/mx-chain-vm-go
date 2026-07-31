@@ -31,7 +31,6 @@ func TestDRWAMRVGeneratedContractsDeployCompatibility(t *testing.T) {
 
 type drwaMRVDeployCompatibilityCase struct {
 	name         string
-	contract     string
 	newAddress   string
 	arguments    []string
 	contractKey  string
