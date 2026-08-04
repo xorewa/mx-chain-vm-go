@@ -103,6 +103,7 @@ github.com/urfave/cli/v2 v2.27.1 h1:8xSQ6szndafKVRmfyeUMxkNUJQMjL1F2zmsZ+qHpfho=
 github.com/urfave/cli/v2 v2.27.1/go.mod h1:8qnjx1vcq5s2/wpsqoZFndg2CE5tNFyrTvS6SinrnYQ=
 github.com/xorewa/bls-go-binary v0.0.0-20250924002409-446538da6433 h1:xk3EPwP73+xDtHaKU9AbC3kkPUE2CaVkv7swyIhkvnM=
 github.com/xorewa/bls-go-binary v0.0.0-20250924002409-446538da6433/go.mod h1:O4Vp1AfR4raRGwFeQpr9X/PQtncEicMoOe6BQt1oX0Y=
+github.com/xorewa/bls-go-binary v0.0.0-20260731163832-566eb78d4b77/go.mod h1:4yhp7kJvmR5IdrFh3gI9p1r3P+k2VOtXeswkZ8n9zDI=
 github.com/xorewa/mx-chain-core-go v0.0.0-20260731080906-2ae724dbfeb1 h1:QEKwsmacNyj5xgHwjzxrbIS53FtyaNea9K5iL7fz1UU=
 github.com/xorewa/mx-chain-core-go v0.0.0-20260731080906-2ae724dbfeb1/go.mod h1:ctKMgkRK+YbkCYaEcGrcGE1JTLwn9I5wLePGeyWHKcA=
 github.com/xorewa/mx-chain-crypto-go v0.0.0-20260801082855-aa434576d3a5 h1:q8fBFDTstCtcrR1DmBg9iXZkrMYST9wCo0DXIN19Fq0=
