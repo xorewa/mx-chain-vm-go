@@ -55,3 +55,5 @@ replace github.com/multiversx/mx-chain-scenario-go => github.com/xorewa/mx-chain
 replace github.com/multiversx/mx-components-big-int => github.com/xorewa/mx-components-big-int v0.0.0-20260804130644-212408e0de37
 
 replace github.com/herumi/bls-go-binary => github.com/xorewa/bls-go-binary v0.0.0-20260731163832-566eb78d4b77
+
+replace github.com/multiversx/concurrent-map => github.com/xorewa/concurrent-map v0.0.0-20260811090152-c00ff30c0c2e
