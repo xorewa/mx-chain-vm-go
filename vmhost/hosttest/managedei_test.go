@@ -2030,6 +2030,7 @@ func Test_ManagedMultiTransferESDTNFTExecuteByUser_JustTransfer(t *testing.T) {
 
 	initialESDTTokenBalance := uint64(100)
 	transferESDTTokenValue := big.NewInt(5)
+	callerSelectedSender := []byte("caller-selected-protocol-like-sender")
 
 	_, err := test.BuildMockInstanceCallTest(t).
 		WithContracts(
@@ -2054,7 +2055,7 @@ func Test_ManagedMultiTransferESDTNFTExecuteByUser_JustTransfer(t *testing.T) {
 
 						ret := vmhooks.TransferESDTNFTExecuteByUserWithTypedArgs(
 							host,
-							test.UserAddress,
+							callerSelectedSender,
 							test.ChildAddress,
 							[]*vmcommon.ESDTTransfer{transfer},
 							int64(testConfig.GasProvided),
@@ -2067,7 +2068,8 @@ func Test_ManagedMultiTransferESDTNFTExecuteByUser_JustTransfer(t *testing.T) {
 						output := host.Output().GetVMOutput()
 						outTransfer := output.OutputAccounts[string(test.ChildAddress)].OutputTransfers[0]
 						assert.NotNil(t, outTransfer)
-						assert.Equal(t, outTransfer.SenderAddress, test.UserAddress)
+						assert.Equal(t, callerSelectedSender, outTransfer.SenderAddress)
+						assert.Equal(t, vm.ProtocolMessageKindNone, outTransfer.ProtocolMessageKind)
 
 						return parentInstance
 					})
